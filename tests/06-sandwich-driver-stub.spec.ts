@@ -5,8 +5,11 @@ import {
   Page,
 } from '@playwright/test';
 
-
-async function driverOpenShoppingCart(
+// =====================================================
+// DRIVER A สำหรับ Bottom-Up branch
+// แทนการ Login ผ่าน UI
+// =====================================================
+async function driverOpenInventory(
   context: BrowserContext
 ): Promise<Page> {
 
@@ -20,8 +23,9 @@ async function driverOpenShoppingCart(
   ]);
 
   const page = await context.newPage();
-  
-  await page.goto('https://www.saucedemo.com/cart.html');
+  await page.goto('https://www.saucedemo.com/inventory.html');
+
+  await expect(page.locator('.inventory_list')).toBeVisible();
 
   return page;
 }
@@ -36,6 +40,12 @@ test('Sandwich: Top-Down STUB + Bottom-Up DRIVER', async ({ browser }) => {
   try {
     await Promise.all([
 
+      // =================================================
+      // BRANCH 1 : TOP-DOWN
+      // A REAL -> Stub B
+      // saucedemo is an SPA — no HTTP request to /inventory.html
+      // to intercept. Use page.setContent() after real login.
+      // =================================================
       (async () => {
         await topPage.goto('https://www.saucedemo.com/');
 
@@ -45,36 +55,45 @@ test('Sandwich: Top-Down STUB + Bottom-Up DRIVER', async ({ browser }) => {
 
         await topPage.waitForURL(/inventory\.html/);
 
- 
+        // Replace SPA-rendered inventory with stub HTML
         await topPage.setContent(`
           <!doctype html>
           <html>
             <head>
               <meta charset="utf-8" />
-              <title>Stub Shopping Cart</title>
+              <title>Stub Inventory</title>
             </head>
             <body>
-              <h1>Your Cart (Stub)</h1>
-              <div class="cart_list" data-test="stub-cart">
-                <div class="cart_item">
-                  <span class="inventory_item_name">Sauce Labs Backpack</span>
-                  <div class="student-owner" data-test="student-name">
-                    Yumi Nakano
-                  </div>
-                </div>
+              <h1>Stub Inventory</h1>
+              <div class="inventory_list" data-test="stub-inventory">
+                Fake Inventory from Stub B
               </div>
             </body>
           </html>
         `);
 
-        await expect(topPage.locator('[data-test="stub-cart"]'))
-          .toBeVisible();
-        await expect(topPage.locator('[data-test="student-name"]'))
-          .toContainText('Yumi Nakano');
+        await expect(topPage.locator('[data-test="stub-inventory"]'))
+          .toContainText('Fake Inventory from Stub B');
       })(),
 
+      // =================================================
+      // BRANCH 2 : BOTTOM-UP
+      // Driver A -> B REAL -> E REAL
+      // =================================================
       (async () => {
-        await driverOpenShoppingCart(bottomContext);
+        const bottomPage = await driverOpenInventory(bottomContext);
+
+        // B REAL
+        await expect(bottomPage.locator('.inventory_item'))
+          .toHaveCount(6);
+
+        // E REAL
+        await bottomPage
+          .locator('[data-test="add-to-cart-sauce-labs-backpack"]')
+          .click();
+
+        await expect(bottomPage.locator('.shopping_cart_badge'))
+          .toHaveText('1');
       })(),
     ]);
 

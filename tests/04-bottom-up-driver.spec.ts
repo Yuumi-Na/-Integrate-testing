@@ -10,7 +10,7 @@ import {
 // ทำหน้าที่แทน Login Layer ด้านบน
 // ไม่กรอก username/password ผ่านหน้า Login
 // =====================================================
-async function driverOpenInventory(
+async function driverOpenCart(
   context: BrowserContext
 ): Promise<Page> {
 
@@ -24,37 +24,32 @@ async function driverOpenInventory(
   ]);
 
   const page = await context.newPage();
-  await page.goto('https://www.saucedemo.com/inventory.html');
+  await page.goto('https://www.saucedemo.com/cart.html');
 
-  await expect(page.locator('.inventory_list')).toBeVisible();
+  await expect(page.locator('.cart_list')).toBeVisible();
 
   return page;
 }
 
-test('Bottom-Up DRIVER: Driver A -> B Inventory -> E Add Cart', async ({ browser }) => {
+test('Bottom-Up DRIVER: Driver -> F Cart', async ({ browser }) => {
 
   const context = await browser.newContext();
 
   try {
     // ===================================================
-    // Driver A เรียก Layer ด้านล่าง
+    // ใช้ Driver เพื่อเข้าหน้า Cart โดยตรง
     // ===================================================
-    const page = await driverOpenInventory(context);
+    const page = await driverOpenCart(context);
 
     // ===================================================
-    // B = Inventory จริง
+    // ทดสอบการทำงานในหน้า Cart (Cart จริง)
     // ===================================================
-    await expect(page.locator('.inventory_item')).toHaveCount(6);
-
-    // ===================================================
-    // E = Add Cart จริง
-    // ===================================================
-    await page
-      .locator('[data-test="add-to-cart-sauce-labs-backpack"]')
-      .click();
-
-    await expect(page.locator('.shopping_cart_badge'))
-      .toHaveText('1');
+    
+    // เช่น ตรวจสอบว่ามีปุ่ม Checkout แสดงอยู่หรือไม่
+    await expect(page.locator('[data-test="checkout"]')).toBeVisible();
+    
+    // หรือตรวจสอบปุ่ม Continue Shopping
+    await expect(page.locator('[data-test="continue-shopping"]')).toBeVisible();
 
   } finally {
     await context.close();

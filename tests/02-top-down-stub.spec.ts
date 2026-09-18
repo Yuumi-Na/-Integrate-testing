@@ -13,7 +13,6 @@ test('Top-Down STUB: Login REAL -> Inventory STUB', async ({ page }) => {
   await page.locator('#password')
     .fill('secret_sauce');
 
-  // รอ navigation หลังจาก login
   await Promise.all([
     page.waitForURL(/inventory\.html/),
     page.locator('#login-button').click(),
@@ -27,38 +26,28 @@ test('Top-Down STUB: Login REAL -> Inventory STUB', async ({ page }) => {
   // by client-side JS (no HTTP request to /inventory.html).
   // Replace the SPA-rendered DOM with our stub HTML.
   // =====================================================
-await page.setContent(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Stub Shopping Cart</title>
-      </head>
-      <body>
-        <h1>Your Cart (Stub)</h1>
-        <div class="cart_list" data-test="stub-cart">
-          <div class="cart_item">
-            <span class="inventory_item_name">Sauce Labs Backpack</span>
-            <div class="student-owner" data-test="student-name">
-              Yumi Nakano
-            </div>
+  await page.setContent(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Stub Cart</title>
+        </head>
+        <body>
+          <h1>Your Cart</h1>
+          <div class="cart_list" data-test="stub-cart">
+            Fake Cart from Stub
+            <div class="cart_item" data-test="student-name">Yumi Nakano</div>
           </div>
-        </div>
-      </body>
-    </html>
-  `);
+        </body>
+      </html>
+ `);
 
   // =====================================================
   // Assert : REAL A -> STUB B
   // =====================================================
 
-  await expect(
-    page.locator('[data-test="stub-cart"]')
-  ).toBeVisible();
+  await expect(page.locator('[data-test="stub-cart"]')).toBeVisible();
 
-  const studentNameLocator = page.locator('[data-test="student-name"]');
-  await expect(studentNameLocator).toBeVisible();
-
-  await expect(studentNameLocator).toContainText('Yumi Nakano');
-
+  await expect(page.locator('[data-test="student-name"]')).toContainText('Yumi Nakano');
 });
